@@ -1,0 +1,33 @@
+# Core Framework
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+
+# Vector Database (Main Storage)
+chromadb
+sentence-transformers
+
+# LLM - Groq (for response generation)
+langchain
+langchain-groq
+groq
+
+# Web Search & Scraping - Tavily
+tavily-python
+
+# Data Processing
+pandas
+numpy
+
+# Date & Time
+python-dateutil
+
+# Utilities
+python-dotenv
+loguru
+
+# Testing
+pytest
+pytest-asyncio
+httpx

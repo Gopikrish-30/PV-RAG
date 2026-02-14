@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PV-RAG Legal Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #ffffff;
+            height: 100vh;
+            display: flex;
+            color: #111;
+            overflow: hidden;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width: 270px;
+            background: #fafafa;
+            border-right: 1px solid #e5e5e5;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-brand {
+            padding: 28px 24px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .sidebar-brand h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #000;
+            letter-spacing: -0.5px;
+        }
+
+        .sidebar-brand span {
+            font-size: 11px;
+            color: #999;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            display: block;
+            margin-top: 4px;
+        }
+
+        .sidebar-section {
+            padding: 20px 16px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .sidebar-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #aaa;
+            margin-bottom: 12px;
+            padding-left: 8px;
+            font-weight: 600;
+        }
+
+        .example-btn {
+            display: block;
+            width: 100%;
+            padding: 11px 14px;
+            margin-bottom: 3px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: #555;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: inherit;
+            text-align: left;
+            transition: all 0.15s ease;
+            line-height: 1.4;
+        }
+
+        .example-btn:hover {
+            background: #fff;
+            color: #000;
+            border-color: #ddd;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+
+        .sidebar-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #e5e5e5;
+            font-size: 11px;
+            color: #bbb;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            background: #22c55e;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        /* ── Main ── */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            background: #fff;
+        }
+
+        .header {
+            padding: 16px 40px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fff;
+            flex-shrink: 0;
+        }
+
+        .header-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #888;
+        }
+
+        .header-badge {
+            font-size: 11px;
+            padding: 4px 12px;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            color: #777;
+            font-weight: 500;
+        }
+
+        /* ── Chat ── */
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px 0;
+            background: #fff;
+        }
+
+        .chat-container::-webkit-scrollbar { width: 5px; }
+        .chat-container::-webkit-scrollbar-track { background: transparent; }
+        .chat-container::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+
+        /* ── Welcome ── */
+        .welcome {
+            text-align: center;
+            padding: 100px 40px;
+        }
+
+        .welcome-icon { font-size: 52px; margin-bottom: 24px; }
+
+        .welcome h3 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 10px;
+            letter-spacing: -0.3px;
+        }
+
+        .welcome p {
+            font-size: 15px;
+            color: #999;
+            max-width: 480px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        /* ── Messages ── */
+        .message {
+            padding: 0 40px;
+            margin-bottom: 4px;
+            animation: fadeIn 0.25s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-inner {
+            max-width: 880px;
+            margin: 0 auto;
+            padding: 24px 0;
+        }
+
+        .message.user { background: #fafafa; }
+        .message.assistant { background: #fff; }
+        .message.assistant .message-inner { border-bottom: 1px solid #f0f0f0; }
+
+        .message-sender {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .message.user .message-sender { color: #bbb; }
+        .message.assistant .message-sender { color: #000; }
+
+        .message-content {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #333;
+        }
+
+        .message.user .message-content { color: #222; }
+
+        /* ── Markdown ── */
+        .message-content p { margin: 8px 0; }
+        .message-content strong { color: #000; font-weight: 600; }
+
+        .message-content blockquote {
+            margin: 14px 0;
+            padding: 14px 20px;
+            background: #f8f8f8;
+            border-left: 3px solid #000;
+            border-radius: 0 8px 8px 0;
+            font-size: 14px;
+            color: #444;
+            line-height: 1.7;
+        }
+
+        .message-content hr {
+            border: none;
+            border-top: 1px solid #eee;
+            margin: 18px 0;
+        }
+
+        .message-content ul, .message-content ol {
+            margin: 10px 0 10px 24px;
+            color: #333;
+        }
+
+        .message-content li { margin: 5px 0; }
+        .message-content em { color: #777; }
+
+        .message-content code {
+            background: #f3f3f3;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #333;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+        }
+
+        .message-content pre {
+            background: #f8f8f8;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            margin: 14px 0;
+        }
+
+        .message-content a {
+            color: #000;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        /* ── Timeline ── */
+        .timeline {
+            margin-top: 20px;
+            padding: 18px;
+            background: #fafafa;
+            border-radius: 10px;
+            border: 1px solid #eee;
+        }
+
+        .timeline h4 {
+            color: #000;
+            margin-bottom: 14px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .timeline-entry {
+            padding: 12px 14px;
+            margin: 4px 0;
+            background: #fff;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #555;
+            border-left: 3px solid #ddd;
+        }
+
+        .timeline-entry.active { border-left-color: #000; color: #222; }
+        .timeline-entry.superseded { opacity: 0.45; }
+        .timeline-entry strong { color: #000; }
+        .timeline-entry small { color: #aaa; }
+
+        /* ── Metadata ── */
+        .metadata {
+            margin-top: 20px;
+            padding-top: 18px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #999;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .meta-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .confidence {
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            color: #555;
+        }
+
+        .answer-source-badge {
+            font-weight: 600;
+            font-size: 11px;
+            padding: 5px 12px;
+            border-radius: 6px;
+        }
+
+        .answer-source-badge.llm_web_merged { background: #000; color: #fff; }
+        .answer-source-badge.llm_dataset_web { background: #333; color: #fff; }
+        .answer-source-badge.llm_dataset { background: #555; color: #fff; }
+        .answer-source-badge.template { background: #eee; color: #666; }
+
+        .meta-info {
+            color: #aaa;
+            font-size: 12px;
+            width: 100%;
+            margin-top: 4px;
+        }
+
+        .meta-info span { margin-right: 16px; }
+
+        /* ── Sources ── */
+        .sources-list {
+            margin-top: 14px;
+            padding: 14px 18px;
+            background: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            font-size: 12px;
+            width: 100%;
+        }
+
+        .sources-list strong {
+            color: #999 !important;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .source-item {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #777;
+        }
+
+        .origin-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+
+        .origin-tag.dataset { background: #f0f0f0; color: #666; }
+        .origin-tag.web { background: #000; color: #fff; }
+
+        .source-item a {
+            color: #888;
+            text-decoration: none;
+            word-break: break-all;
+            transition: color 0.15s;
+        }
+
+        .source-item a:hover { color: #000; text-decoration: underline; }
+
+        /* ── Loading ── */
+        .loading { display: inline-block; padding: 16px 0; }
+
+        .loading-dots { display: inline-flex; gap: 6px; }
+
+        .loading-dots span {
+            width: 7px;
+            height: 7px;
+            background: #ccc;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* ── Input ── */
+        .input-area {
+            padding: 20px 40px 28px;
+            background: #fff;
+            border-top: 1px solid #eee;
+            flex-shrink: 0;
+        }
+
+        .input-wrapper {
+            max-width: 880px;
+            margin: 0 auto;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        #userInput {
+            flex: 1;
+            padding: 15px 22px;
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 14px;
+            color: #111;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        #userInput::placeholder { color: #bbb; }
+
+        #userInput:focus {
+            border-color: #999;
+            box-shadow: 0 0 0 3px rgba(0,0,0,0.04);
+        }
+
+        #sendButton {
+            padding: 15px 32px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+
+        #sendButton:hover { background: #222; }
+        #sendButton:disabled { opacity: 0.25; cursor: not-allowed; }
+
+        /* ── Error ── */
+        .error {
+            background: #fff5f5 !important;
+            border-left: 3px solid #000;
+            padding: 14px 18px;
+            border-radius: 8px;
+            color: #555;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .message { padding: 0 20px; }
+            .input-area { padding: 16px 20px 24px; }
+            .header { padding: 14px 20px; }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <h2>PV-RAG</h2>
+            <span>Legal Intelligence Engine</span>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-label">Quick Queries</div>
+            <button class="example-btn" onclick="askExample('What was the helmet fine in 2010?')">
+                Helmet fine in 2010?
+            </button>
+            <button class="example-btn" onclick="askExample('What is the current penalty for not wearing a helmet?')">
+                Current helmet penalty
+            </button>
+            <button class="example-btn" onclick="askExample('What is the punishment for drunk driving?')">
+                Drunk driving punishment
+            </button>
+            <button class="example-btn" onclick="askExample('Section 80C deduction limit in 2015')">
+                Section 80C in 2015
+            </button>
+            <button class="example-btn" onclick="askExample('How has the overspeeding fine changed over the years?')">
+                Overspeeding fine history
+            </button>
+        </div>
+
+        <div class="sidebar-footer">
+            <span class="status-dot"></span> System Online
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+        <div class="header">
+            <span class="header-title">Legal Research Assistant</span>
+            <span class="header-badge">AI Powered · Temporal-Aware</span>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome" id="welcome">
+                <div class="welcome-icon">&#9878;</div>
+                <h3>Ask anything about Indian law</h3>
+                <p>AI-powered answers with temporal awareness, source attribution, and web verification. Try a query from the sidebar or type below.</p>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-wrapper">
+                <input
+                    type="text"
+                    id="userInput"
+                    placeholder="Ask about any Indian law, penalty, or legal provision..."
+                    onkeypress="handleKeyPress(event)"
+                    autocomplete="off"
+                >
+                <button id="sendButton" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let isLoading = false;
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !isLoading) sendMessage();
+        }
+
+        function askExample(question) {
+            document.getElementById('userInput').value = question;
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const question = input.value.trim();
+            if (!question || isLoading) return;
+
+            const welcome = document.getElementById('welcome');
+            if (welcome) welcome.style.display = 'none';
+
+            addMessage(question, 'user');
+            input.value = '';
+
+            isLoading = true;
+            document.getElementById('sendButton').disabled = true;
+            const loadingId = addLoading();
+
+            try {
+                const response = await fetch(`${API_BASE}/api/query`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question: question,
+                        enable_web_verification: true,
+                        max_results: 10
+                    })
+                });
+
+                removeLoading(loadingId);
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Request failed');
+                }
+
+                addAssistantMessage(await response.json());
+            } catch (error) {
+                removeLoading(loadingId);
+                addError('Something went wrong: ' + error.message);
+            } finally {
+                isLoading = false;
+                document.getElementById('sendButton').disabled = false;
+            }
+        }
+
+        function addMessage(text, sender) {
+            const container = document.getElementById('chatContainer');
+            const msg = document.createElement('div');
+            msg.className = `message ${sender}`;
+
+            const inner = document.createElement('div');
+            inner.className = 'message-inner';
+
+            const label = document.createElement('div');
+            label.className = 'message-sender';
+            label.textContent = sender === 'user' ? 'You' : 'PV-RAG';
+
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            content.textContent = text;
+
+            inner.appendChild(label);
+            inner.appendChild(content);
+            msg.appendChild(inner);
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function addAssistantMessage(data) {
+            const container = document.getElementById('chatContainer');
+            const msg = document.createElement('div');
+            msg.className = 'message assistant';
+
+            const inner = document.createElement('div');
+            inner.className = 'message-inner';
+
+            const label = document.createElement('div');
+            label.className = 'message-sender';
+            label.textContent = 'PV-RAG';
+            inner.appendChild(label);
+
+            // Answer
+            const answerDiv = document.createElement('div');
+            answerDiv.className = 'message-content';
+            answerDiv.innerHTML = typeof marked !== 'undefined'
+                ? marked.parse(data.answer)
+                : data.answer.replace(/\n/g, '<br>');
+            inner.appendChild(answerDiv);
+
+            // Timeline
+            if (data.timeline && data.timeline.length > 0) {
+                const tl = document.createElement('div');
+                tl.className = 'timeline';
+                tl.innerHTML = '<h4>Timeline</h4>';
+                data.timeline.forEach(entry => {
+                    const e = document.createElement('div');
+                    e.className = `timeline-entry ${entry.status}`;
+                    e.innerHTML = `
+                        <strong>${entry.period}</strong> — ${entry.rule_text_preview || 'Version ' + entry.version}
+                        <br><small>${entry.status}</small>
+                    `;
+                    tl.appendChild(e);
+                });
+                inner.appendChild(tl);
+            }
+
+            // Metadata
+            const meta = document.createElement('div');
+            meta.className = 'metadata';
+
+            const conf = document.createElement('span');
+            conf.className = 'meta-tag confidence';
+            conf.textContent = `${(data.confidence_score * 100).toFixed(0)}% confidence`;
+            meta.appendChild(conf);
+
+            const sourceLabels = {
+                'llm_web_merged': 'LLM · Dataset + Web',
+                'llm_dataset+web': 'LLM · Dataset + Web Context',
+                'llm_dataset': 'LLM · Dataset',
+                'template': 'Template'
+            };
+            const srcClass = (data.answer_source || 'template').replace('+', '_');
+            const srcLabel = sourceLabels[data.answer_source] || data.answer_source || 'template';
+            const badge = document.createElement('span');
+            badge.className = `meta-tag answer-source-badge ${srcClass}`;
+            badge.textContent = srcLabel;
+            meta.appendChild(badge);
+
+            const info = document.createElement('div');
+            info.className = 'meta-info';
+            info.innerHTML = `
+                <span>${data.legal_reference}</span>
+                <span>${data.verification_method}</span>
+                ${data.query_date ? `<span>${data.query_date}</span>` : ''}
+            `;
+            meta.appendChild(info);
+
+            // Sources
+            if (data.sources && data.sources.length > 0) {
+                const sl = document.createElement('div');
+                sl.className = 'sources-list';
+                let html = '<strong>Sources</strong>';
+                data.sources.forEach(src => {
+                    const origin = src.origin || 'dataset';
+                    const tagClass = origin === 'web' ? 'web' : 'dataset';
+                    const displayUrl = src.url.length > 80 ? src.url.substring(0, 77) + '...' : src.url;
+                    const isLink = src.url.startsWith('http');
+                    const urlHtml = isLink
+                        ? `<a href="${src.url}" target="_blank" title="${src.url}">${displayUrl}</a>`
+                        : `<span>${src.label}</span>`;
+                    html += `
+                        <div class="source-item">
+                            <span class="origin-tag ${tagClass}">${origin.toUpperCase()}</span>
+                            ${urlHtml}
+                        </div>`;
+                });
+                sl.innerHTML = html;
+                meta.appendChild(sl);
+            }
+
+            inner.appendChild(meta);
+            msg.appendChild(inner);
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function addLoading() {
+            const container = document.getElementById('chatContainer');
+            const div = document.createElement('div');
+            const id = 'loading-' + Date.now();
+            div.id = id;
+            div.className = 'message assistant';
+            div.innerHTML = `
+                <div class="message-inner">
+                    <div class="message-sender">PV-RAG</div>
+                    <div class="loading">
+                        <div class="loading-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+
+        function removeLoading(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function addError(message) {
+            const container = document.getElementById('chatContainer');
+            const msg = document.createElement('div');
+            msg.className = 'message assistant';
+            msg.innerHTML = `
+                <div class="message-inner">
+                    <div class="message-sender">PV-RAG</div>
+                    <div class="error">${message}</div>
+                </div>
+            `;
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        window.addEventListener('load', async () => {
+            try {
+                const r = await fetch(`${API_BASE}/health`);
+                if (r.ok) console.log('Connected to PV-RAG API');
+            } catch (e) {
+                console.warn('API offline');
+            }
+        });
+
+        document.getElementById('userInput').focus();
+    </script>
+</body>
+</html>
