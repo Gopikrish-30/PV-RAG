@@ -5,6 +5,7 @@ Uses Groq LLM to understand user queries intelligently:
 - Detects query type (historical, latest, general, comparison, range)
 - Extracts temporal entities (years, dates)
 - Extracts legal topics & rewrites query for better vector retrieval
+- Multi-query rewriting: generates multiple search variations for broader coverage
 - Falls back to regex when LLM is unavailable
 """
 from typing import Dict, List, Optional, Tuple
@@ -72,6 +73,110 @@ class QueryParser:
                 logger.warning(f"LLM parse failed ({e}), falling back to regex")
 
         return self._parse_with_regex(query)
+
+    # ------------------------------------------------------------------
+    # Multi-query rewriting (for broader web / retrieval coverage)
+    # ------------------------------------------------------------------
+
+    def generate_multi_queries(self, query: str, num_queries: int = 5) -> List[str]:
+        """
+        Use LLM to rewrite the user's query into multiple search variations.
+        Each variation targets the same legal question from a different angle
+        to improve web search coverage.
+
+        Returns: list of query strings (always includes the original).
+        """
+        if not self.llm:
+            return self._generate_multi_queries_regex(query)
+
+        try:
+            system_prompt = f"""You are a legal search query expansion system for Indian law.
+Given a user's legal question, generate exactly {num_queries} different search query variations.
+
+Rules:
+1. Each variation must ask the SAME legal question but phrased differently.
+2. Include formal legal terminology in some variations (Act name, Section number if known).
+3. Include plain-language variations for broader coverage.
+4. Add "India" or "Indian law" to at least 2 variations.
+5. Add the current year ({datetime.now().year}) to at least 2 variations.
+6. One variation should be a very specific legal lookup (e.g. "Section X of Y Act penalty amount").
+7. Output ONLY a JSON array of strings. No markdown, no explanation.
+
+Example input: "What is the helmet fine now?"
+Example output: [
+  "current helmet fine penalty India {datetime.now().year}",
+  "Section 194D Motor Vehicles Act helmet penalty amount {datetime.now().year}",
+  "latest fine for not wearing helmet while riding motorcycle India",
+  "what is the penalty for riding without helmet under Motor Vehicles Amendment Act",
+  "helmet challan amount India current law"
+]"""
+
+            messages = [("system", system_prompt), ("human", query)]
+            response = self.llm.invoke(messages)
+            raw = response.content.strip()
+
+            # Strip <think>...</think> reasoning tags
+            raw = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
+            # Strip markdown code fences
+            if raw.startswith("```"):
+                raw = re.sub(r"^```(?:json)?\s*", "", raw)
+                raw = re.sub(r"\s*```$", "", raw)
+
+            # Try to find JSON array in the response (robust extraction)
+            json_match = re.search(r'\[.*\]', raw, re.DOTALL)
+            if json_match:
+                raw = json_match.group(0)
+
+            queries = json.loads(raw)
+            if isinstance(queries, list) and all(isinstance(q, str) for q in queries):
+                # Always include the original query
+                if query not in queries:
+                    queries.insert(0, query)
+                logger.info(f"Multi-query rewriting: generated {len(queries)} variations")
+                return queries[:num_queries + 1]
+
+        except Exception as e:
+            logger.warning(f"Multi-query rewriting failed ({e}), using regex fallback")
+
+        return self._generate_multi_queries_regex(query)
+
+    def _generate_multi_queries_regex(self, query: str) -> List[str]:
+        """Regex-based multi-query generation fallback."""
+        queries = [query]
+        year = datetime.now().year
+
+        # Clean query for manipulation
+        q_lower = query.lower()
+        topics = self._extract_topics(q_lower)
+
+        # Variation 1: Add "India" + current year
+        queries.append(f"{query} India {year}")
+
+        # Variation 2: Add "current law" / "latest"
+        if "current" not in q_lower and "latest" not in q_lower:
+            queries.append(f"current {query} latest law")
+
+        # Variation 3: Add act name from topic
+        topic_to_act = {
+            'motor vehicles': 'Motor Vehicles Act',
+            'income tax': 'Income Tax Act',
+            'taxation': 'Tax Act India',
+            'criminal law': 'Indian Penal Code Bharatiya Nyaya Sanhita',
+            'companies': 'Companies Act',
+            'consumer protection': 'Consumer Protection Act',
+            'criminal procedure': 'Bharatiya Nagarik Suraksha Sanhita',
+            'wages': 'Mahatma Gandhi National Rural Employment Guarantee Act',
+        }
+        for t in topics:
+            if t in topic_to_act:
+                queries.append(f"{topic_to_act[t]} {query} {year}")
+                break
+
+        # Variation 4: Formal legal phrasing
+        queries.append(f"penalty provision section act {query} India")
+
+        logger.info(f"Multi-query (regex): generated {len(queries)} variations")
+        return queries[:6]
 
     # ------------------------------------------------------------------
     # LLM-powered parsing

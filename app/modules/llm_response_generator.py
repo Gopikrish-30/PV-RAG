@@ -82,7 +82,9 @@ class LLMResponseGenerator:
             response = self.llm.invoke(messages)
             answer = response.content.strip()
             # Strip <think>...</think> reasoning tags (qwen3 thinking model)
+            # Also handle unclosed <think> tags (model may not close them)
             answer = re.sub(r"<think>.*?</think>", "", answer, flags=re.DOTALL).strip()
+            answer = re.sub(r"<think>.*", "", answer, flags=re.DOTALL).strip()
             logger.info(f"LLM response generated ({len(answer)} chars)")
             # Path B: LLM with dataset rules (+ web context if available)
             self._last_source = "llm_dataset+web" if (web_result and web_result.get("web_answer")) else "llm_dataset"
@@ -241,3 +243,10 @@ def get_llm_generator() -> LLMResponseGenerator:
     if _generator is None:
         _generator = LLMResponseGenerator()
     return _generator
+
+
+def reset_llm_generator():
+    """Force re-creation of the LLM generator (picks up new API keys)."""
+    global _generator
+    _generator = None
+    return get_llm_generator()

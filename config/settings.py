@@ -1,13 +1,28 @@
 """
 Application Configuration Settings
+
+NOTE: .env file values ALWAYS take priority over OS/shell environment variables.
+This prevents stale exported env vars from overriding updated .env keys.
 """
 from pydantic_settings import BaseSettings
+from dotenv import dotenv_values
 from typing import Optional
 import os
 
 
+def _load_env_overrides() -> dict:
+    """Load .env file and return values that should override OS env vars."""
+    env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+    if os.path.exists(env_path):
+        return {k: v for k, v in dotenv_values(env_path).items() if v is not None}
+    return {}
+
+
 class Settings(BaseSettings):
-    """Application settings with environment variable support"""
+    """Application settings with environment variable support.
+    
+    Priority: .env file > OS environment variables > defaults
+    """
     
     # Application
     app_name: str = "PV-RAG"
@@ -51,5 +66,38 @@ class Settings(BaseSettings):
         case_sensitive = False
 
 
+def _create_settings() -> Settings:
+    """Create Settings with .env values taking priority over OS env vars.
+    
+    By default, pydantic-settings gives OS env vars higher priority than .env.
+    We flip that: temporarily inject .env values into os.environ so they win.
+    """
+    env_overrides = _load_env_overrides()
+    saved = {}
+    for key, val in env_overrides.items():
+        saved[key] = os.environ.get(key)       # save original
+        os.environ[key] = val                   # inject .env value
+    
+    s = Settings()
+    
+    # Restore original env (clean up)
+    for key, original in saved.items():
+        if original is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = original
+    
+    return s
+
+
 # Global settings instance
-settings = Settings()
+settings = _create_settings()
+
+
+def reload_settings():
+    """Reload settings from .env file (clears any cached/stale values).
+    .env file values always take priority over OS environment variables.
+    """
+    global settings
+    settings = _create_settings()
+    return settings
