@@ -1,1 +1,1 @@
-sample for gitsy
+sample for gitsy and all other tools
