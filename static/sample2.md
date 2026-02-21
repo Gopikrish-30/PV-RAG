@@ -1,1 +1,0 @@
-sample for gitsy and all other tools and how to use them  
