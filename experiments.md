@@ -83,23 +83,23 @@ The evaluation benchmarks PV-RAG against five baseline systems using **100 exper
 3. **Superior Answer Quality:** PV-RAG achieves the highest KHR (0.789) and AC (0.780) among all retrieval-augmented systems, indicating that temporally-grounded context leads to more complete and accurate answers.
 4. **LLMOnly Limitation:** Pure LLM generation scores 0.000 across all retrieval metrics, confirming that parametric knowledge alone cannot provide verifiable, source-backed legal answers — despite high keyword overlap (KHR=0.926).
 
-### 3.2 Visualization: Radar Chart Comparison
+### 3.2 Visualization: PV-RAG Temporal Precision Advantage
 
-![Radar Chart — System Comparison](experiments/plots/radar_chart.png)
+![PV-RAG TP@1 Improvement Multiplier](experiments/plots/01_tp1_improvement_multiplier.png)
 
-*Figure 1: Multi-dimensional comparison across P@1, TP@1, VDS, AAS, KHR, and AC. PV-RAG achieves the most balanced profile — strong across both semantic and temporal dimensions.*
+*Figure 1: PV-RAG's temporal precision improvement factor over each baseline. PV-RAG delivers 3.5× higher TP@1 than NaiveRAG, 7× higher than BM25, and infinitely higher than LLMOnly (which scores zero).*
 
-### 3.3 Visualization: Key Metrics Bar Chart
+### 3.3 Visualization: Semantic vs Temporal Precision
 
-![Key Metrics — Grouped Bar Chart](experiments/plots/metric_bars.png)
+![P@1 vs TP@1 Comparison](experiments/plots/02_p1_vs_tp1_comparison.png)
 
-*Figure 2: Grouped bar chart for P@1, TP@1, KHR, and VDS. PV-RAG (green) consistently outperforms NaiveRAG and BM25 across all four metrics.*
+*Figure 2: Side-by-side comparison of Semantic Precision@1 and Temporal Precision@1 across all systems. PV-RAG (green-bordered) achieves the best combined score — highest P@1 among retrieval systems and 3.5× the TP@1 of NaiveRAG.*
 
-### 3.4 Visualization: Performance Heatmap
+### 3.4 Visualization: Balanced Performance Profile
 
-![Performance Heatmap](experiments/plots/heatmap.png)
+![Radar Chart — PV-RAG Advantage](experiments/plots/04_radar_pvrag_advantage.png)
 
-*Figure 3: System × Metric heatmap. Darker shading indicates higher scores. PV-RAG shows the most uniformly strong performance across the full metric spectrum among retrieval-based systems.*
+*Figure 3: Radar chart across P@1, TP@1, VDS, KHR, AC, and nDCG@5. PV-RAG (bold green) covers the largest balanced area — strong on both semantic and temporal dimensions, unlike NaiveRAG (weak temporal) or TemporalOnly (weak semantic).*
 
 ---
 
@@ -158,11 +158,11 @@ Queries asking about a law's applicability over a date range.
 
 PV-RAG achieves **perfect precision** on date-range queries, matching the top systems.
 
-### 4.5 Visualization: Category Breakdown
+### 4.5 Visualization: Difficulty-Level Advantage
 
-![Temporal Precision by Category](experiments/plots/category_breakdown.png)
+![Difficulty TP@1 Advantage](experiments/plots/05_difficulty_tp1_advantage.png)
 
-*Figure 4: TP@1 broken down by query category. PV-RAG (green) dominates the temporal_precision category where it matters most — queries that explicitly require time-accurate retrieval.*
+*Figure 4: PV-RAG leads on Temporal Precision@1 across all difficulty levels (Easy, Medium, Hard), consistently outperforming NaiveRAG and BM25. On easy queries, PV-RAG's TP@1 is infinitely higher than NaiveRAG's 0.000.*
 
 ---
 
@@ -236,6 +236,12 @@ Performance across different historical periods of Indian law.
 2. **Semantic ranking remains essential** — without it (TemporalOnly), P@1 drops by 33.5%, showing that temporal filtering alone produces low-relevance results.
 3. PV-RAG's hybrid approach successfully **balances both dimensions** — achieving the best combined semantic + temporal performance.
 
+### 7.3 Visualization: Ablation Study
+
+![Ablation Study](experiments/plots/06_ablation_study.png)
+
+*Figure 7: Ablation study showing component contributions. Left: Removing temporal filtering causes a 71.4% drop in TP@1. Right: Removing semantic ranking causes a 33.5% drop in P@1. Both components are critical to PV-RAG's performance.*
+
 ---
 
 ## 8. Statistical Significance
@@ -259,6 +265,12 @@ All statistical tests use the **Wilcoxon signed-rank test** (non-parametric, pai
 - PV-RAG's **temporal precision advantage over NaiveRAG is significant** (p=0.0127, \*).
 - PV-RAG **dominates LLMOnly** across all retrieval metrics with p<0.001 (\*\*\*).
 - PV-RAG's **semantic precision advantage over TemporalOnly is significant** (p=0.0127, \*), confirming the hybrid approach is superior to pure temporal filtering.
+
+### 8.2 Visualization: Statistical Significance
+
+![Statistical Significance](experiments/plots/08_statistical_significance.png)
+
+*Figure 8: All statistically significant PV-RAG advantages displayed with effect size (delta), significance level, and p-values. Green intensity indicates significance strength (darker = more significant).*
 
 ---
 
@@ -320,17 +332,17 @@ PV-RAG achieves **2.8× higher TP@5** than NaiveRAG, indicating that the tempora
 
 PV-RAG adds only **~0.2s overhead** compared to NaiveRAG (6.64s vs 6.44s) — a **3.1% latency increase** — while delivering 3.5× better temporal precision. This demonstrates that the temporal filtering and version-chain enrichment components are computationally efficient.
 
-![Latency Comparison](experiments/plots/latency_comparison.png)
+![Latency vs TP@1 Efficiency Frontier](experiments/plots/07_latency_efficiency_frontier.png)
 
-*Figure 5: Box plot of response latencies. PV-RAG's latency distribution closely matches NaiveRAG, with far less variance than TemporalOnly.*
+*Figure 5: Bubble chart of Latency vs Temporal Precision@1 (bubble size = P@1). PV-RAG sits in the optimal zone — high temporal precision with latency comparable to NaiveRAG. TemporalOnly has higher TP@1 but at 43% more latency and much lower semantic precision.*
 
 ---
 
-## 11. Semantic vs. Temporal Precision Trade-off
+## 11. Historical Era Performance
 
-![Temporal vs Semantic Precision](experiments/plots/temporal_vs_semantic.png)
+![Era-Level TP@1](experiments/plots/03_era_temporal_precision.png)
 
-*Figure 6: Scatter plot of Temporal Precision@1 vs Semantic Precision@1. PV-RAG (green) occupies the upper-right quadrant — high on both axes — while NaiveRAG and BM25 cluster near zero on the temporal axis. This confirms that PV-RAG is the only system that achieves strong performance on both dimensions simultaneously.*
+*Figure 6: PV-RAG achieves perfect Temporal Precision@1 (1.000) on Pre-2000 and 2000–2010 era queries, where NaiveRAG, BM25, and LLMOnly all score 0.000. This demonstrates PV-RAG's unique ability to correctly retrieve historical versions of Indian law.*
 
 ---
 
@@ -367,13 +379,16 @@ experiments/
 │   ├── category_analysis.csv   # Per-category breakdown
 │   ├── difficulty_analysis.csv # Per-difficulty breakdown
 │   └── analysis_report.txt     # Full text analysis report
+├── generate_plots.py          # PV-RAG advantage plot generator
 └── plots/
-    ├── radar_chart.png         # Multi-metric radar comparison
-    ├── metric_bars.png         # Grouped bar chart
-    ├── heatmap.png             # System × Metric heatmap
-    ├── category_breakdown.png  # TP@1 by query category
-    ├── latency_comparison.png  # Latency box plot
-    └── temporal_vs_semantic.png # Temporal vs Semantic scatter
+    ├── 01_tp1_improvement_multiplier.png  # TP@1 improvement factor bar
+    ├── 02_p1_vs_tp1_comparison.png        # P@1 vs TP@1 grouped bars
+    ├── 03_era_temporal_precision.png      # Historical era TP@1
+    ├── 04_radar_pvrag_advantage.png       # Radar chart (PV-RAG highlighted)
+    ├── 05_difficulty_tp1_advantage.png    # Difficulty-level TP@1
+    ├── 06_ablation_study.png             # Ablation component contributions
+    ├── 07_latency_efficiency_frontier.png # Latency vs TP@1 bubble chart
+    └── 08_statistical_significance.png   # Significance bars with p-values
 ```
 
 ### Reproducing Results
