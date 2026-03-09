@@ -1,0 +1,228 @@
+
+================================================================================
+OVERALL COMPARISON TABLE
+================================================================================
+                precision_at_1  precision_at_5  recall_at_5    mrr  ndcg_at_5  temporal_precision_at_1  temporal_precision_at_5  version_discrimination  amendment_awareness  temporal_hallucination_rate  keyword_hit_rate  answer_completeness  latency_seconds
+BM25                     0.407           0.393        0.593  0.490      0.454                    0.037                    0.133                   0.080                0.130                        0.012             0.732                0.710            6.288
+LLMOnly                  0.000           0.000        0.000  0.000      0.000                    0.000                    0.000                   0.000                0.000                        0.012             0.926                0.878            4.227
+NaiveRAG                 0.519           0.459        0.667  0.593      0.498                    0.074                    0.111                   0.077                0.204                        0.034             0.769                0.770            6.441
+PV-RAG                   0.556           0.452        0.593  0.574      0.512                    0.259                    0.311                   0.156                0.167                        0.062             0.789                0.780            6.643
+PV-RAG-NoGraph           0.556           0.452        0.593  0.574      0.512                    0.259                    0.311                   0.156                0.167                        0.049             0.780                0.782            6.515
+TemporalOnly             0.370           0.326        0.407  0.389      0.344                    0.481                    0.481                   0.241                0.148                        0.049             0.780                0.749            9.489
+
+================================================================================
+CATEGORY ANALYSIS
+================================================================================
+
+  amendment_awareness:
+           category         system  n  precision_at_1  temporal_precision_at_1  keyword_hit_rate
+amendment_awareness           BM25  3        0.333333                      0.0          0.638889
+amendment_awareness        LLMOnly  3        0.000000                      0.0          0.888889
+amendment_awareness       NaiveRAG  3        0.333333                      0.0          0.638889
+amendment_awareness         PV-RAG  3        0.333333                      0.0          0.638889
+amendment_awareness PV-RAG-NoGraph  3        0.333333                      0.0          0.638889
+amendment_awareness   TemporalOnly  3        0.333333                      0.0          0.638889
+
+  comparison:
+  category         system  n  precision_at_1  temporal_precision_at_1  keyword_hit_rate
+comparison           BM25  2             1.0                      0.0               1.0
+comparison        LLMOnly  2             0.0                      0.0               1.0
+comparison       NaiveRAG  2             1.0                      0.0               1.0
+comparison         PV-RAG  2             1.0                      0.0               1.0
+comparison PV-RAG-NoGraph  2             1.0                      0.0               1.0
+comparison   TemporalOnly  2             1.0                      0.0               1.0
+
+  cross_era:
+ category         system  n  precision_at_1  temporal_precision_at_1  keyword_hit_rate
+cross_era           BM25  3             0.0                 0.000000          0.555556
+cross_era        LLMOnly  3             0.0                 0.000000          0.777778
+cross_era       NaiveRAG  3             0.0                 0.333333          0.555556
+cross_era         PV-RAG  3             0.0                 0.333333          0.555556
+cross_era PV-RAG-NoGraph  3             0.0                 0.333333          0.555556
+cross_era   TemporalOnly  3             0.0                 0.666667          0.555556
+
+  date_range:
+  category         system  n  precision_at_1  temporal_precision_at_1  keyword_hit_rate
+date_range           BM25  2             0.5                      0.0          0.833333
+date_range        LLMOnly  2             0.0                      0.0          1.000000
+date_range       NaiveRAG  2             1.0                      0.0          0.833333
+date_range         PV-RAG  2             1.0                      0.0          0.833333
+date_range PV-RAG-NoGraph  2             1.0                      0.0          0.833333
+date_range   TemporalOnly  2             1.0                      0.0          0.833333
+
+  general_knowledge:
+         category         system  n  precision_at_1  temporal_precision_at_1  keyword_hit_rate
+general_knowledge           BM25  4            0.25                      0.0          0.520833
+general_knowledge        LLMOnly  4            0.00                      0.0          0.937500
+general_knowledge       NaiveRAG  4            0.25                      0.0          0.645833
+general_knowledge         PV-RAG  4            0.25                      0.0          0.666667
+general_knowledge PV-RAG-NoGraph  4            0.25                      0.0          0.604167
+general_knowledge   TemporalOnly  4            0.25                      0.0          0.583333
+
+  temporal_edge_case:
+          category         system  n  precision_at_1  temporal_precision_at_1  keyword_hit_rate
+temporal_edge_case           BM25  2             0.0                      0.0          1.000000
+temporal_edge_case        LLMOnly  2             0.0                      0.0          1.000000
+temporal_edge_case       NaiveRAG  2             0.5                      0.0          1.000000
+temporal_edge_case         PV-RAG  2             0.5                      0.5          1.000000
+temporal_edge_case PV-RAG-NoGraph  2             0.5                      0.5          1.000000
+temporal_edge_case   TemporalOnly  2             0.0                      1.0          0.833333
+
+  temporal_precision:
+          category         system  n  precision_at_1  temporal_precision_at_1  keyword_hit_rate
+temporal_precision           BM25  7        0.285714                 0.142857          0.761905
+temporal_precision        LLMOnly  7        0.000000                 0.000000          0.964286
+temporal_precision       NaiveRAG  7        0.428571                 0.142857          0.833333
+temporal_precision         PV-RAG  7        0.571429                 0.714286          0.916667
+temporal_precision PV-RAG-NoGraph  7        0.571429                 0.714286          0.916667
+temporal_precision   TemporalOnly  7        0.285714                 1.000000          0.928571
+
+  version_discrimination:
+              category         system  n  precision_at_1  temporal_precision_at_1  keyword_hit_rate
+version_discrimination           BM25  4             1.0                      0.0          0.775000
+version_discrimination        LLMOnly  4             0.0                      0.0          0.875000
+version_discrimination       NaiveRAG  4             1.0                      0.0          0.775000
+version_discrimination         PV-RAG  4             1.0                      0.0          0.741667
+version_discrimination PV-RAG-NoGraph  4             1.0                      0.0          0.741667
+version_discrimination   TemporalOnly  4             0.5                      0.5          0.825000
+
+================================================================================
+ABLATION STUDY: Component Contributions
+================================================================================
+
+  System               temporal_precision_at_1 version_discrimination         precision_at_1       keyword_hit_rate
+  --------------------------------------------------------------------------------------------------------------
+  TemporalOnly                          0.481                  0.241                  0.370                  0.780
+  NaiveRAG                              0.074                  0.077                  0.519                  0.769
+  PV-RAG-NoGraph                        0.259                  0.156                  0.556                  0.780
+  PV-RAG                                0.259                  0.156                  0.556                  0.789
+
+  Component Contributions (delta from removing component):
+  • Removing Semantic Ranking + Hybrid Merge: TP@1 drops by -0.222
+  • Removing Temporal Filtering + Version Chains + Graph: TP@1 drops by 0.185
+  • Removing ILO-Graph Augmentation: TP@1 drops by 0.000
+
+================================================================================
+STATISTICAL SIGNIFICANCE TESTS
+================================================================================
+
+  PV-RAG vs BM25:
+               precision_at_1: delta=+0.148 p=0.0228 *
+      temporal_precision_at_1: delta=+0.222 p=0.0072 **
+             keyword_hit_rate: delta=+0.057 p=0.0747 ns
+
+  PV-RAG vs LLMOnly:
+               precision_at_1: delta=+0.556 p=0.0001 ***
+      temporal_precision_at_1: delta=+0.259 p=0.0041 **
+             keyword_hit_rate: delta=-0.137 p=0.9964 ns
+
+  PV-RAG vs NaiveRAG:
+               precision_at_1: delta=+0.037 p=0.1587 ns
+      temporal_precision_at_1: delta=+0.185 p=0.0127 *
+             keyword_hit_rate: delta=+0.020 p=0.3613 ns
+
+  PV-RAG vs PV-RAG-NoGraph:
+               precision_at_1: delta=+0.000 p=nan ns
+      temporal_precision_at_1: delta=+0.000 p=nan ns
+             keyword_hit_rate: delta=+0.009 p=0.1587 ns
+
+  PV-RAG vs TemporalOnly:
+               precision_at_1: delta=+0.185 p=0.0127 *
+      temporal_precision_at_1: delta=-0.222 p=0.9928 ns
+             keyword_hit_rate: delta=+0.009 p=0.5546 ns
+
+================================================================================
+TEMPORAL ANALYSIS: Performance Across Time Periods
+================================================================================
+
+  Era: Pre-2000 (n=2 queries)
+    BM25                : TP@1=0.500  KHR=1.000
+    LLMOnly             : TP@1=0.000  KHR=1.000
+    NaiveRAG            : TP@1=0.000  KHR=0.833
+    PV-RAG              : TP@1=1.000  KHR=1.000
+    PV-RAG-NoGraph      : TP@1=1.000  KHR=1.000
+    TemporalOnly        : TP@1=1.000  KHR=1.000
+
+  Era: 2000-2010 (n=2 queries)
+    BM25                : TP@1=0.000  KHR=0.708
+    LLMOnly             : TP@1=0.000  KHR=0.875
+    NaiveRAG            : TP@1=0.000  KHR=0.875
+    PV-RAG              : TP@1=1.000  KHR=0.708
+    PV-RAG-NoGraph      : TP@1=1.000  KHR=0.708
+    TemporalOnly        : TP@1=1.000  KHR=0.875
+
+  Era: 2010-2019 (n=4 queries)
+    BM25                : TP@1=0.000  KHR=0.792
+    LLMOnly             : TP@1=0.000  KHR=0.938
+    NaiveRAG            : TP@1=0.250  KHR=0.792
+    PV-RAG              : TP@1=0.250  KHR=0.938
+    PV-RAG-NoGraph      : TP@1=0.250  KHR=0.938
+    TemporalOnly        : TP@1=1.000  KHR=0.875
+
+  Era: 2019-2023 (n=4 queries)
+    BM25                : TP@1=0.000  KHR=0.812
+    LLMOnly             : TP@1=0.000  KHR=0.938
+    NaiveRAG            : TP@1=0.250  KHR=0.938
+    PV-RAG              : TP@1=0.500  KHR=0.938
+    PV-RAG-NoGraph      : TP@1=0.500  KHR=0.938
+    TemporalOnly        : TP@1=1.000  KHR=0.854
+
+  Era: Post-2024 (n=1 queries)
+    BM25                : TP@1=0.000  KHR=0.333
+    LLMOnly             : TP@1=0.000  KHR=0.333
+    NaiveRAG            : TP@1=0.000  KHR=0.333
+    PV-RAG              : TP@1=0.000  KHR=0.333
+    PV-RAG-NoGraph      : TP@1=0.000  KHR=0.333
+    TemporalOnly        : TP@1=1.000  KHR=0.333
+
+================================================================================
+NOVEL METRICS ANALYSIS (PV-RAG Contributions)
+================================================================================
+
+  Temporal Precision@1 — Correct version for queried year:
+    BM25                : 0.037 ± 0.192
+    LLMOnly             : 0.000 ± 0.000
+    NaiveRAG            : 0.074 ± 0.267
+    PV-RAG              : 0.259 ± 0.447
+    PV-RAG-NoGraph      : 0.259 ± 0.447
+    TemporalOnly        : 0.481 ± 0.509
+
+  Temporal Precision@5 — Top-5 temporal validity:
+    BM25                : 0.133 ± 0.215
+    LLMOnly             : 0.000 ± 0.000
+    NaiveRAG            : 0.111 ± 0.217
+    PV-RAG              : 0.311 ± 0.434
+    PV-RAG-NoGraph      : 0.311 ± 0.434
+    TemporalOnly        : 0.481 ± 0.509
+
+  Version Discrimination Score — Right version, right era:
+    BM25                : 0.080 ± 0.152
+    LLMOnly             : 0.000 ± 0.000
+    NaiveRAG            : 0.077 ± 0.161
+    PV-RAG              : 0.156 ± 0.259
+    PV-RAG-NoGraph      : 0.156 ± 0.259
+    TemporalOnly        : 0.241 ± 0.290
+
+  Amendment Awareness — Surfaces amendment history:
+    BM25                : 0.130 ± 0.223
+    LLMOnly             : 0.000 ± 0.000
+    NaiveRAG            : 0.204 ± 0.250
+    PV-RAG              : 0.167 ± 0.240
+    PV-RAG-NoGraph      : 0.167 ± 0.240
+    TemporalOnly        : 0.148 ± 0.233
+
+  Temporal Hallucination Rate — Incorrect temporal claims (lower=better):
+    BM25                : 0.012 ± 0.064
+    LLMOnly             : 0.012 ± 0.064
+    NaiveRAG            : 0.034 ± 0.109
+    PV-RAG              : 0.062 ± 0.094
+    PV-RAG-NoGraph      : 0.049 ± 0.111
+    TemporalOnly        : 0.049 ± 0.121
+
+  Cross-Era Accuracy — Correct law for law-replacement boundaries:
+    BM25                : 0.731 ± 0.388
+    LLMOnly             : 0.462 ± 0.139
+    NaiveRAG            : 0.846 ± 0.315
+    PV-RAG              : 0.769 ± 0.330
+    PV-RAG-NoGraph      : 0.769 ± 0.330
+    TemporalOnly        : 0.538 ± 0.320

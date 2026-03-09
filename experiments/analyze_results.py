@@ -275,12 +275,12 @@ class ExperimentAnalyzer:
                     sig = "***" if p_value < 0.001 else "**" if p_value < 0.01 else "*" if p_value < 0.05 else "ns"
                     delta = np.mean(pvrag_vals) - np.mean(other_vals)
                     print(
-                        f"    {metric:>25}: Δ={delta:+.3f} "
+                        f"    {metric:>25}: delta={delta:+.3f} "
                         f"p={p_value:.4f} {sig}"
                     )
                 except Exception:
                     delta = np.mean(pvrag_vals) - np.mean(other_vals)
-                    print(f"    {metric:>25}: Δ={delta:+.3f} (test not applicable)")
+                    print(f"    {metric:>25}: delta={delta:+.3f} (test not applicable)")
 
     def generate_temporal_analysis(self):
         """Analyze performance across different historical periods."""
