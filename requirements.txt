@@ -20,6 +20,9 @@ tavily-python
 pandas
 numpy
 
+# Graph
+networkx
+
 # Date & Time
 python-dateutil
 
@@ -31,3 +34,7 @@ loguru
 pytest
 pytest-asyncio
 httpx
+
+# Experiments & Analysis
+matplotlib
+scipy

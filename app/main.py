@@ -294,16 +294,19 @@ async def _handle_dataset_pipeline(
 ) -> QueryResponse:
     """
     Dataset pipeline for HISTORICAL / GENERAL / DATE_RANGE / COMPARISON queries.
+    Uses graph-augmented retrieval with version-chain enrichment.
     """
-    # ------ Step 2: Retrieve from ChromaDB ------
+    # ------ Step 2: Retrieve from ChromaDB + Graph ------
     retrieval = TemporalRetrievalEngine()
     rules: list = []
     query_date_str: Optional[str] = None
+    comparison_data: Optional[Dict] = None
 
     if query_type == "HISTORICAL_POINT":
         qd = parsed["temporal_entities"].get("date")
         query_date_str = qd.isoformat() if qd else None
-        rules = retrieval.retrieve_for_point_in_time(
+        # Use graph-augmented retrieval for richer results
+        rules = retrieval.retrieve_with_graph(
             query_text=search_text,
             query_date=qd or date.today(),
             limit=request.max_results,
@@ -319,12 +322,27 @@ async def _handle_dataset_pipeline(
             limit=request.max_results,
         )
 
-    else:  # GENERAL, COMPARISON, …
+    elif query_type == "COMPARISON":
+        y1 = parsed["temporal_entities"].get("year1", 2000)
+        y2 = parsed["temporal_entities"].get("year2", date.today().year)
+        comparison_data = retrieval.retrieve_for_comparison(
+            query_text=search_text,
+            year1=y1,
+            year2=y2,
+            limit=request.max_results,
+        )
+        # Use all_versions as the main rules list for timeline + answer
+        rules = comparison_data.get("all_versions", [])
+        if not rules:
+            rules = comparison_data.get("year1_rules", []) + comparison_data.get("year2_rules", [])
+
+    else:  # GENERAL
         rules = retrieval.retrieve_general(
             query_text=search_text,
             limit=request.max_results,
         )
 
+    # Fallback: if filtered retrieval returned nothing, try pure semantic
     if not rules:
         rules = retrieval.retrieve_general(
             query_text=request.question,
@@ -367,7 +385,7 @@ async def _handle_dataset_pipeline(
             query_date=parsed["temporal_entities"].get("date"),
         )
         if need_web:
-            logger.info("Performing web verification…")
+            logger.info("Performing web verification...")
             web_result = web_agent.verify_and_compare(
                 query=request.question,
                 dataset_rules=rules,
@@ -388,17 +406,23 @@ async def _handle_dataset_pipeline(
 
     # ------ Step 5: Build response ------
     primary = rules[0]
-    timeline = retrieval.build_timeline_dict(rules)
+    primary_law = retrieval.get_primary_law(rules)
+    timeline = retrieval.build_timeline_dict(rules, primary_law=primary_law)
 
     answer_source = getattr(llm_generator, '_last_source', 'template')
 
-    base_conf = 0.92 if query_type in ("HISTORICAL_POINT",) else 0.85
-    if web_result and web_result.get("verified"):
-        base_conf = (base_conf + web_result.get("confidence", 0.5)) / 2
+    # Evidence-based confidence scoring
+    confidence = retrieval.calculate_confidence(rules, query_type, web_result)
+
+    # Clean up mojibake in the answer
+    answer = _fix_encoding(answer)
 
     sources: List[SourceInfo] = []
-    law = primary.get("law_name", primary.get("act_title", "Unknown"))
-    sec = primary.get("section", primary.get("section_id", "N/A"))
+    # Use primary law for reference; fall back to first result
+    law = primary_law or primary.get("law_name", primary.get("act_title", "Unknown"))
+    # Find the most relevant section from the primary law
+    primary_sections = [r for r in rules if r.get("law_name") == law]
+    sec = primary_sections[0].get("section", "N/A") if primary_sections else primary.get("section", "N/A")
 
     src = primary.get("source", "")
     if src:
@@ -409,7 +433,7 @@ async def _handle_dataset_pipeline(
     if not sources:
         sources.append(SourceInfo(
             url="chromadb://legal_rules",
-            label=f"Dataset: {law} – {sec}",
+            label=f"Dataset: {law} - {sec}",
             origin="dataset",
         ))
 
@@ -429,8 +453,8 @@ async def _handle_dataset_pipeline(
         query_type=query_type,
         answer_source=answer_source,
         timeline=[TimelineEntry(**e) for e in timeline],
-        legal_reference=f"{law} – Section {sec}",
-        confidence_score=round(base_conf, 3),
+        legal_reference=f"{law} - Section {sec}",
+        confidence_score=confidence,
         verification_method=verification_method,
         sources=sources,
         query_date=query_date_str,
@@ -450,19 +474,85 @@ def _extract_domain(url: str) -> str:
         return "web"
 
 
+def _fix_encoding(text: str) -> str:
+    """Fix UTF-8 mojibake (double-encoded text through CP1252/Latin-1)."""
+    # Try the robust approach first: reverse double-encoding
+    try:
+        fixed = text.encode('cp1252').decode('utf-8')
+        if fixed != text:
+            logger.debug("Fixed mojibake via cp1252->utf-8 re-encoding")
+            return fixed
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        logger.debug("cp1252 re-encoding failed, using manual replacements")
+
+    # Fallback: manual per-pattern replacement (always runs if cp1252 fails)
+    replacements = {
+        "\u00e2\u20ac\u201c": "-",     # en-dash mojibake
+        "\u00e2\u20ac\u201d": "-",     # em-dash mojibake
+        "\u00e2\u20ac\u2122": "'",     # right single quote mojibake
+        "\u00e2\u20ac\u0153": '"',     # left double quote mojibake
+        "\u00e2\u20ac\u009d": '"',     # right double quote mojibake
+        "\u00e2\u20ac\u00a2": "-",     # bullet mojibake
+        "\u00e2\u201a\u00b9": "Rs.",   # ₹ symbol mojibake
+        "\u00c2\u00a0": " ",           # non-breaking space mojibake
+    }
+    for bad, good in replacements.items():
+        text = text.replace(bad, good)
+    return text
+
+
 @app.get("/api/stats")
 async def get_statistics():
     try:
         chroma = get_chroma_manager()
         stats = chroma.get_stats()
+        from app.db.graph_manager import GraphManager
+        graph = GraphManager()
+        graph_stats = graph.get_graph_stats()
         return {
             "total_rules": stats["total_rules"],
             "unique_acts_sample": stats.get("unique_acts_sample", 0),
             "active_rules_sample": stats.get("active_rules_sample", 0),
             "storage": "ChromaDB (Vector Database)",
+            "graph": graph_stats,
         }
     except Exception as e:
         logger.error(f"Error getting stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class TimelineRequest(BaseModel):
+    law_name: str
+    section: str
+
+
+@app.post("/api/timeline")
+async def get_version_timeline(request: TimelineRequest):
+    """
+    Retrieve the complete version timeline for a specific law + section.
+    Returns all historical versions sorted chronologically.
+    """
+    try:
+        retrieval = TemporalRetrievalEngine()
+        versions = retrieval.build_version_timeline(
+            law_name=request.law_name,
+            section=request.section,
+        )
+        if not versions:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No versions found for {request.law_name} - {request.section}",
+            )
+        return {
+            "law_name": request.law_name,
+            "section": request.section,
+            "version_count": len(versions),
+            "timeline": versions,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Timeline lookup failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

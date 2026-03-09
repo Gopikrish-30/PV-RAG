@@ -36,7 +36,7 @@ class LLMResponseGenerator:
                         groq_api_key=settings.groq_api_key,
                         model_name=settings.groq_model,
                         temperature=0.1,
-                        max_tokens=600,
+                        max_tokens=2048,
                     )
                     logger.info(f"Groq LLM initialized: {settings.groq_model}")
                 except Exception as e:
@@ -74,7 +74,8 @@ class LLMResponseGenerator:
                     "You are an expert Indian legal information assistant. "
                     "Provide accurate, concise answers based ONLY on the provided legal rules. "
                     "Always cite the specific Act name, Section number, and effective period. "
-                    "If information is insufficient, say so honestly.",
+                    "If information is insufficient, say so honestly. "
+                    "Respond directly without any reasoning tags. /no_think",
                 ),
                 ("human", prompt),
             ]
@@ -83,8 +84,24 @@ class LLMResponseGenerator:
             answer = response.content.strip()
             # Strip <think>...</think> reasoning tags (qwen3 thinking model)
             # Also handle unclosed <think> tags (model may not close them)
+            raw_answer = answer
             answer = re.sub(r"<think>.*?</think>", "", answer, flags=re.DOTALL).strip()
             answer = re.sub(r"<think>.*", "", answer, flags=re.DOTALL).strip()
+            # If stripping think tags left nothing, extract key content from the thinking
+            if not answer and raw_answer:
+                # Try extracting the last meaningful paragraph from the thinking
+                think_match = re.search(r"<think>(.*)</think>", raw_answer, flags=re.DOTALL)
+                if think_match:
+                    thinking_text = think_match.group(1).strip()
+                    # Use the last few sentences as the answer
+                    sentences = [s.strip() for s in thinking_text.split('.') if s.strip()]
+                    if sentences:
+                        answer = '. '.join(sentences[-3:]) + '.'
+                if not answer:
+                    # Last resort: use template fallback
+                    logger.warning("LLM produced empty answer after think-tag stripping, using template")
+                    self._last_source = "template"
+                    return self._template_response(query, query_type, rules, query_date)
             logger.info(f"LLM response generated ({len(answer)} chars)")
             # Path B: LLM with dataset rules (+ web context if available)
             self._last_source = "llm_dataset+web" if (web_result and web_result.get("web_answer")) else "llm_dataset"
